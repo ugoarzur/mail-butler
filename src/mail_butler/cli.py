@@ -459,6 +459,23 @@ def stats(
                 cat_table.add_row(cat.value, str(count), f"{pct:.1f}%", str(unread), bar)
             console.print(cat_table)
 
+        # Sub-category breakdown
+        if s.sub_category_distribution:
+            sub_table = Table(title="Sub-category Breakdown")
+            sub_table.add_column("Category / Sub-category", style="bold")
+            sub_table.add_column("Count", justify="right")
+            sub_table.add_column("%", justify="right")
+
+            total_classified = s.classified_count or 1
+            for key, count in sorted(
+                s.sub_category_distribution.items(),
+                key=lambda x: x[1],
+                reverse=True,
+            ):
+                pct = count / total_classified * 100
+                sub_table.add_row(key, str(count), f"{pct:.1f}%")
+            console.print(sub_table)
+
         # Top senders
         if s.top_senders:
             sender_table = Table(title="Top 15 Senders")

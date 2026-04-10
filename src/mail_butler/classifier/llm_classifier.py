@@ -19,15 +19,16 @@ SYSTEM_PROMPT = """You are an email classifier. Classify the email into exactly 
 - spam: unsolicited junk mail
 - social: social media notifications (follows, likes, comments)
 - notification: automated system notifications (alerts, reminders)
+- unknown: email does not clearly fit any of the above categories
 
 Respond with ONLY a JSON object, no other text:
-{"category": "<category>", "confidence": <0.0-1.0>}"""
+{"category": "<category>", "confidence": <0.0-1.0>, "sub_category": "<optional sub-category or null>"}"""
 
 USER_PROMPT_TEMPLATE = """From: {sender}
 Subject: {subject}
 Preview: {preview}"""
 
-VALID_CATEGORIES = {c.value for c in EmailCategory if c != EmailCategory.UNKNOWN}
+VALID_CATEGORIES = {c.value for c in EmailCategory}
 
 
 class LLMClassifier(BaseClassifier):
@@ -87,13 +88,13 @@ class LLMClassifier(BaseClassifier):
             return self._parse_response(response_text, email_id)
         except httpx.ConnectError:
             logger.error("Cannot connect to Ollama at %s", self.base_url)
-            return self._fallback(email_id)
+            return self._fallback(email_id, error="connection_error")
         except httpx.TimeoutException:
             logger.warning("Ollama request timed out for email %s", email_id)
-            return self._fallback(email_id)
+            return self._fallback(email_id, error="timeout")
         except Exception:
             logger.warning("LLM classification failed for email %s", email_id, exc_info=True)
-            return self._fallback(email_id)
+            return self._fallback(email_id, error="llm_error")
 
     def classify_batch(self, emails: list[dict]) -> list[Classification]:
         """Classify emails sequentially (LLM is the bottleneck)."""
@@ -118,21 +119,29 @@ class LLMClassifier(BaseClassifier):
         end = text.rfind("}") + 1
         if start == -1 or end == 0:
             logger.warning("No JSON found in LLM response: %s", text[:200])
-            return self._fallback(email_id)
+            return self._fallback(email_id, error="no_json_in_response")
 
         try:
             data = json.loads(text[start:end])
         except json.JSONDecodeError:
             logger.warning("Invalid JSON in LLM response: %s", text[:200])
-            return self._fallback(email_id)
+            return self._fallback(email_id, error="invalid_json")
 
         category_str = data.get("category", "").lower().strip()
         if category_str not in VALID_CATEGORIES:
             logger.warning("Invalid category from LLM: %s", category_str)
-            return self._fallback(email_id)
+            return self._fallback(email_id, error="invalid_category")
 
         confidence = float(data.get("confidence", 0.7))
         confidence = max(0.0, min(1.0, confidence))
+
+        sub_category = data.get("sub_category")
+        if sub_category is not None:
+            from mail_butler.models import SUB_CATEGORIES
+
+            valid_subs = SUB_CATEGORIES.get(EmailCategory(category_str), [])
+            if sub_category not in valid_subs:
+                sub_category = None
 
         return Classification(
             email_id=email_id,
@@ -140,13 +149,15 @@ class LLMClassifier(BaseClassifier):
             confidence=confidence,
             method=ClassificationMethod.LLM,
             model_version=self.model,
+            sub_category=sub_category,
         )
 
-    def _fallback(self, email_id: str) -> Classification:
+    def _fallback(self, email_id: str, error: str) -> Classification:
         return Classification(
             email_id=email_id,
             category=EmailCategory.UNKNOWN,
             confidence=0.0,
             method=ClassificationMethod.LLM,
             model_version=self.model,
+            error=error,
         )

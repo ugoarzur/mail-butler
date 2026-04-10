@@ -24,9 +24,13 @@ class StatsAggregator:
         # Category distribution
         cat_counter: Counter[str] = Counter()
         unread_by_cat: Counter[str] = Counter()
+        sub_cat_counter: Counter[str] = Counter()
         for e in classified:
             cat = e["category"]
             cat_counter[cat] += 1
+            sub_cat = e.get("sub_category")
+            if sub_cat:
+                sub_cat_counter[f"{cat}/{sub_cat}"] += 1
             if not e.get("is_read"):
                 unread_by_cat[cat] += 1
 
@@ -81,6 +85,7 @@ class StatsAggregator:
             unread_by_category=unread_by_category,
             top_senders=top_senders,
             spam_ratio=spam_ratio,
+            sub_category_distribution=dict(sub_cat_counter),
             emails_per_day=dict(emails_per_day),
             emails_per_hour=dict(emails_per_hour),
             oldest_email=oldest,

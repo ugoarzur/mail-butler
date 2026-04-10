@@ -32,6 +32,13 @@ Local email management tool that connects to your mailboxes via IMAP, classifies
 - Generate cleanup report with unsubscribe links
 - Suggest old emails to archive or delete
 
+### Roadmap -- Clustering & Continuous Improvement
+
+- Collect UNKNOWN and low-confidence classifications
+- Cluster ambiguous emails (KMeans/DBSCAN on TF-IDF features) to discover uncovered patterns
+- Group senders by behavior (domain, frequency, headers) to auto-expand domain lists
+- Feed validated clusters back into rules and sklearn training data
+
 ## Architecture
 
 - **1 SQLite database per account** -- complete isolation between mailboxes

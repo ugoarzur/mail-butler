@@ -60,6 +60,11 @@ def auto_classify(
         )
         if result.category != EmailCategory.UNKNOWN:
             return result
+        # LLM explicitly said "unknown" (no error) — accept that verdict
+        if result.error is None:
+            return result
+        # Technical error — fall through to final fallback
+        logger.warning("LLM error for %s: %s", email["id"], result.error)
 
     # Nothing worked - return rules result (even if UNKNOWN)
     return rules.classify(

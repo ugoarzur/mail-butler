@@ -17,6 +17,19 @@ class EmailCategory(StrEnum):
     UNKNOWN = "unknown"
 
 
+SUB_CATEGORIES: dict[EmailCategory, list[str]] = {
+    EmailCategory.TRANSACTIONAL: [
+        "receipt", "shipping", "password_reset",
+        "account_verification", "order_confirmation", "invoice", "payment",
+    ],
+    EmailCategory.PROMOTION: ["sale", "coupon", "product_launch", "seasonal"],
+    EmailCategory.SOCIAL: ["follow", "like", "comment", "mention", "message", "connection_request"],
+    EmailCategory.NEWSLETTER: ["digest", "blog", "news", "update"],
+    EmailCategory.NOTIFICATION: ["alert", "reminder", "security", "system"],
+    EmailCategory.SPAM: ["phishing", "scam", "bulk"],
+}
+
+
 class ClassificationMethod(StrEnum):
     RULES = "rules"
     SKLEARN = "sklearn"
@@ -50,6 +63,7 @@ class Classification:
     method: ClassificationMethod
     sub_category: str | None = None
     model_version: str | None = None
+    error: str | None = None
 
 
 @dataclass
@@ -63,5 +77,6 @@ class MailboxStats:
     spam_ratio: float = 0.0
     emails_per_day: dict[str, int] = field(default_factory=dict)
     emails_per_hour: dict[int, int] = field(default_factory=dict)
+    sub_category_distribution: dict[str, int] = field(default_factory=dict)
     oldest_email: datetime | None = None
     newest_email: datetime | None = None

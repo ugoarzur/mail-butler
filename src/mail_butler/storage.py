@@ -206,7 +206,7 @@ class Database:
             SELECT e.id, e.folder, e.subject, e.sender_address, e.sender_name,
                    e.date_sent, e.is_read, e.is_flagged, e.has_attachments, e.size_bytes,
                    e.headers_json,
-                   c.category, c.confidence, c.method
+                   c.category, c.confidence, c.method, c.sub_category
             FROM emails e
             LEFT JOIN classifications c ON e.id = c.email_id
         """

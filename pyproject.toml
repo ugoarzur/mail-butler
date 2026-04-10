@@ -1,0 +1,44 @@
+[project]
+name = "mail-butler"
+version = "0.1.0"
+description = "Local email management tool - classify, organize and clean up your inbox"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "imapclient>=3.0.1",
+    "mail-parser>=3.15.0",
+    "typer>=0.15.0",
+    "rich>=14.0.0",
+    "pydantic>=2.11.0",
+    "pydantic-settings>=2.8.0",
+    "scikit-learn>=1.6.0",
+    "httpx>=0.28.0",
+    "joblib>=1.5.0",
+]
+
+[project.scripts]
+mail-butler = "mail_butler.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mail_butler"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.11.0",
+]
+
+[tool.ruff]
+src = ["src"]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
